@@ -30,7 +30,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "codecraft.db"
                 )
-                    .fallbackToDestructiveMigration() // В продакшне замени на Migration
+                    .fallbackToDestructiveMigration()
                     .build()
                     .also { INSTANCE = it }
             }

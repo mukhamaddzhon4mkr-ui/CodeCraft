@@ -3,10 +3,6 @@ package com.example.codecraft.data
 import android.content.Context
 import android.content.SharedPreferences
 
-/**
- * Хранит ID вошедшего пользователя между сессиями.
- * При выходе — очищает.
- */
 class SessionManager(context: Context) {
 
     private val prefs: SharedPreferences =

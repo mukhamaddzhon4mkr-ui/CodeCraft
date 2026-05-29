@@ -6,7 +6,6 @@ import java.security.MessageDigest
 
 class UserRepository(private val userDao: UserDao) {
 
-    /** Регистрация нового пользователя */
     suspend fun register(
         username: String,
         email: String,
@@ -24,7 +23,6 @@ class UserRepository(private val userDao: UserDao) {
         return Result.success(user.copy(id = id))
     }
 
-    /** Вход по email + пароль */
     suspend fun login(email: String, password: String): Result<UserEntity> {
         val user = userDao.login(
             email = email.trim().lowercase(),
@@ -39,7 +37,6 @@ class UserRepository(private val userDao: UserDao) {
 
     suspend fun findById(id: Long): UserEntity? = userDao.findById(id)
 
-    /** SHA-256 хэш пароля */
     private fun hashPassword(password: String): String {
         val bytes = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }

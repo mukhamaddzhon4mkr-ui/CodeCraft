@@ -27,7 +27,6 @@ fun AppNavigation() {
     val sessionManager = remember { SessionManager(context) }
     val userRepository = remember { UserRepository(db.userDao()) }
 
-    // Стартовый экран: если уже вошёл — сразу на Home
     val startDestination = if (sessionManager.isLoggedIn) Screen.Home.route else Screen.Auth.route
 
     NavHost(navController = navController, startDestination = startDestination) {

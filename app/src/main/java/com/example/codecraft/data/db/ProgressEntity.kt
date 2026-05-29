@@ -5,11 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/**
- * Таблица прогресса обучения
- *
- * Каждая запись = один урок, пройденный конкретным пользователем
- */
+
 @Entity(
     tableName = "progress",
     foreignKeys = [
@@ -17,7 +13,7 @@ import androidx.room.PrimaryKey
             entity = UserEntity::class,
             parentColumns = ["id"],
             childColumns = ["userId"],
-            onDelete = ForeignKey.CASCADE   // При удалении юзера — удаляем и прогресс
+            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [Index("userId")]
@@ -26,11 +22,11 @@ data class ProgressEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val userId: Long,
-    val language: String,           // "kotlin", "python", "javascript" и т.д.
-    val lessonId: String,           // Уникальный ID урока, например "kotlin_basics_1"
+    val language: String,
+    val lessonId: String,
     val lessonTitle: String,
     val isCompleted: Boolean = false,
-    val score: Int = 0,             // Очки за урок (0–100)
-    val completedAt: Long? = null,  // null если ещё не завершён
+    val score: Int = 0,
+    val completedAt: Long? = null,
     val attempts: Int = 0
 )
