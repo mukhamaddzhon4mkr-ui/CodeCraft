@@ -43,7 +43,7 @@ fun LessonDetailScreen(
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getInstance(context) }
-    val progressRepository = remember { ProgressRepository(db.progressDao()) }
+    val progressRepository = remember { ProgressRepository(db.progressDao(), db.notificationDao(), db.userDao()) }
     val scope = rememberCoroutineScope()
 
     val lesson = remember(lessonId) {

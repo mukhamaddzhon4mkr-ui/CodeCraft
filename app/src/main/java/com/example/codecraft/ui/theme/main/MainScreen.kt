@@ -91,6 +91,7 @@ fun MainScreen(
             composable(BottomNavItem.Courses.route) {
                 LessonsScreen(
                     navController = rootNavController,
+                    sessionManager = sessionManager,
                     showBackButton = false
                 )
             }

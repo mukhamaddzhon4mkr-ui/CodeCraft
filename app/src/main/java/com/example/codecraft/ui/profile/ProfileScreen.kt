@@ -46,7 +46,7 @@ fun ProfileScreen(
     
     val db = remember { AppDatabase.getInstance(context) }
     val userRepository = remember { UserRepository(db.userDao()) }
-    val progressRepository = remember { ProgressRepository(db.progressDao()) }
+    val progressRepository = remember { ProgressRepository(db.progressDao(), db.notificationDao(), db.userDao()) }
     val userId = sessionManager.userId
 
     var user by remember { mutableStateOf<UserEntity?>(null) }

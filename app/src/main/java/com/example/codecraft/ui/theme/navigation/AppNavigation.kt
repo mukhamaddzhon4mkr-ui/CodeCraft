@@ -96,6 +96,7 @@ fun AppNavigation() {
         composable(Screen.Lessons.route) {
             LessonsScreen(
                 navController = navController,
+                sessionManager = sessionManager,
                 onBack = { navController.popBackStack() }
             )
         }

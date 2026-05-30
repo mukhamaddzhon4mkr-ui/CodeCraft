@@ -22,7 +22,9 @@ import androidx.compose.ui.unit.*
 import androidx.navigation.NavController
 import com.example.codecraft.data.SessionManager
 import com.example.codecraft.data.db.AppDatabase
+import com.example.codecraft.data.repository.NotificationRepository
 import com.example.codecraft.data.repository.ProgressRepository
+import kotlinx.coroutines.launch
 
 import com.example.codecraft.ui.theme.*
 
@@ -34,15 +36,49 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getInstance(context) }
-    val progressRepository = remember { ProgressRepository(db.progressDao()) }
+    val progressRepository = remember { ProgressRepository(db.progressDao(), db.notificationDao(), db.userDao()) }
+    val notificationRepository = remember { NotificationRepository(db.notificationDao(), db.userDao()) }
+    val userRepository = remember { com.example.codecraft.data.repository.UserRepository(db.userDao()) }
     val userId = sessionManager.userId
+    val scope = rememberCoroutineScope()
 
     var totalScore by remember { mutableIntStateOf(0) }
+    val notifications by if (userId != null) {
+        notificationRepository.getNotifications(userId).collectAsState(initial = emptyList())
+    } else {
+        remember { mutableStateOf(emptyList()) }
+    }
+
+    var showNotifications by remember { mutableStateOf(false) }
     
     LaunchedEffect(userId) {
         if (userId != null) {
-            progressRepository.getTotalScore(userId).collect { totalScore = it }
+            val user = userRepository.findById(userId)
+            if (user == null) {
+                onLogout()
+            } else {
+                progressRepository.getTotalScore(userId).collect { totalScore = it }
+            }
         }
+    }
+
+    if (showNotifications) {
+        LaunchedEffect(Unit) {
+            if (userId != null) {
+                notificationRepository.markAllAsRead(userId)
+            }
+        }
+        NotificationsBottomSheet(
+            notifications = notifications,
+            onDismiss = { showNotifications = false },
+            onClearAll = {
+                if (userId != null) {
+                    scope.launch {
+                        notificationRepository.clearAll(userId)
+                    }
+                }
+            }
+        )
     }
 
     Column(
@@ -53,7 +89,7 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -77,10 +113,56 @@ fun HomeScreen(
                 }
             }
             IconButton(
-                onClick = { /* Notifications */ },
+                onClick = { showNotifications = true },
                 modifier = Modifier.background(Surface, CircleShape)
             ) {
-                Icon(Icons.Default.Notifications, contentDescription = null, tint = Accent)
+                BadgedBox(
+                    badge = {
+                        if (notifications.any { !it.isRead }) {
+                            Badge(containerColor = Accent)
+                        }
+                    }
+                ) {
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = Accent)
+                }
+            }
+        }
+
+        if (userId != null) {
+            val progress by progressRepository.getProgressByLanguage(userId, "Python")
+                .collectAsState(initial = emptyList())
+            
+            val latestCompleted = progress.filter { it.isCompleted }
+                .maxByOrNull { it.completedAt ?: 0L }
+
+            if (latestCompleted != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Accent.copy(alpha = 0.1f)),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Accent.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🎉", fontSize = 24.sp)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                "Поздравляем!",
+                                color = Accent,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "Вы прошли урок: ${latestCompleted.lessonTitle}",
+                                color = TextPrim,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -135,7 +217,9 @@ fun HomeScreen(
         val languages = listOf(
             LanguageItem("Python", "🐍", "Самый популярный", Color(0xFF3776AB), true),
             LanguageItem("Kotlin", "🎯", "Для Android", Color(0xFF7F52FF), false),
-            LanguageItem("Java", "☕", "Классика Enterprise", Color(0xFFED8B00), false)
+            LanguageItem("Java", "☕", "Классика Enterprise", Color(0xFFED8B00), false),
+            LanguageItem("Go", "🐹", "Высокая скорость", Color(0xFF00ADD8), false),
+            LanguageItem("C++", "⚡", "Максимальный контроль", Color(0xFF00599C), false)
         )
 
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

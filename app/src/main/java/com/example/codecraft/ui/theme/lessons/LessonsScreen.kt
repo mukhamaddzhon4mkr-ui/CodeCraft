@@ -8,17 +8,23 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.codecraft.data.SessionManager
+import com.example.codecraft.data.db.AppDatabase
 import com.example.codecraft.data.model.Lesson
 import com.example.codecraft.data.model.PythonContent
+import com.example.codecraft.data.repository.ProgressRepository
 import com.example.codecraft.ui.navigation.Screen
 
 import com.example.codecraft.ui.theme.*
@@ -26,10 +32,26 @@ import com.example.codecraft.ui.theme.*
 @Composable
 fun LessonsScreen(
     navController: NavController,
+    sessionManager: SessionManager,
     showBackButton: Boolean = true,
     onBack: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val db = remember { AppDatabase.getInstance(context) }
+    val progressRepository = remember { ProgressRepository(db.progressDao(), db.notificationDao(), db.userDao()) }
+    val userId = sessionManager.userId
+    
     val lessons = PythonContent.lessons
+    val completedLessonIds by if (userId != null) {
+        progressRepository.getProgressByLanguage(userId, "Python")
+            .collectAsState(initial = emptyList())
+    } else {
+        remember { mutableStateOf(emptyList()) }
+    }
+    
+    val completedIdsSet = remember(completedLessonIds) {
+        completedLessonIds.filter { it.isCompleted }.map { it.lessonId }.toSet()
+    }
 
     Column(
         modifier = Modifier
@@ -67,9 +89,19 @@ fun LessonsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(lessons) { lesson ->
-                LessonCard(lesson = lesson) {
-                    navController.navigate(Screen.LessonDetail.createRoute(lesson.id))
+            items(lessons.indices.toList()) { index ->
+                val lesson = lessons[index]
+                val isCompleted = completedIdsSet.contains(lesson.id)
+                val isLocked = index > 0 && !completedIdsSet.contains(lessons[index - 1].id)
+                
+                LessonCard(
+                    lesson = lesson, 
+                    isCompleted = isCompleted,
+                    isLocked = isLocked
+                ) {
+                    if (!isLocked) {
+                        navController.navigate(Screen.LessonDetail.createRoute(lesson.id))
+                    }
                 }
             }
         }
@@ -77,28 +109,39 @@ fun LessonsScreen(
 }
 
 @Composable
-fun LessonCard(lesson: Lesson, onClick: () -> Unit) {
+fun LessonCard(
+    lesson: Lesson, 
+    isCompleted: Boolean,
+    isLocked: Boolean,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable(enabled = !isLocked) { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Accent.copy(alpha = 0.3f))
+        colors = CardDefaults.cardColors(
+            containerColor = if (isLocked) Surface.copy(alpha = 0.5f) else Surface
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, 
+            if (isLocked) Color.Gray.copy(alpha = 0.3f) else Accent.copy(alpha = 0.3f)
+        )
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "📖",
-                fontSize = 32.sp
+                text = if (isLocked) "🔒" else if (isCompleted) "✅" else "📖",
+                fontSize = 32.sp,
+                modifier = Modifier.alpha(if (isLocked) 0.5f else 1f)
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = lesson.title,
-                    color = TextPrim,
+                    color = if (isLocked) TextSecond else TextPrim,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -107,10 +150,20 @@ fun LessonCard(lesson: Lesson, onClick: () -> Unit) {
                     color = TextSecond,
                     fontSize = 14.sp
                 )
-                Text(
-                    text = "⭐ +${lesson.rewardPoints} очков",
-                    color = Accent,
-                    fontSize = 12.sp
+                if (!isLocked) {
+                    Text(
+                        text = "⭐ +${lesson.rewardPoints} очков",
+                        color = Accent,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+            if (isLocked) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Заблокировано",
+                    tint = TextSecond,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
