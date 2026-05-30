@@ -1,46 +1,116 @@
 package com.example.codecraft.data.model
 
 object PythonContent {
-
     val lessons = listOf(
         Lesson(
             id = "py_01",
             language = "Python",
             title = "1. Знакомство с print()",
-            description = "Узнаем, как заставить компьютер говорить.",
-            theoryText = """
-                В языке Python для вывода любого текста или чисел на экран используется встроенная функция print().
-                
-                Текст, который ты хочешь вывести, обязательно нужно оборачивать в кавычки - можно использовать как двойные (""), так и одинарные ('').
-                
-                Пример простейшего кода: 
-                print("Привет, CodeCraft!")
-                
-                После запуска этой команды компьютер послушно напечатает на экране фразу внутри кавычек.
-            """.trimIndent(),
-            question = "Какой код правильно выведет на экран число 5?",
-            options = listOf("print(5)", "output(5)", "echo 5", "show(5)"),
-            correctAnswer = "print(5)"
+            description = "Твой первый код в Python.",
+            theoryText = "Функция print() выводит текст на экран. Текст должен быть в кавычках.\nПример: print(\"Привет, Мир!\")",
+            question = "Какой код выведет на экран фразу: Hello?",
+            options = listOf("print(Hello)", "print(\"Hello\")", "echo \"Hello\"", "say(\"Hello\")"),
+            correctAnswer = "print(\"Hello\")",
+            rewardPoints = 100
         ),
         Lesson(
             id = "py_02",
             language = "Python",
-            title = "2. Переменные - коробки для данных",
-            description = "Научимся сохранять информацию в память устройства",
-            theoryText = """
-                Переменная - это просто именованная область памяти, куда мы можем временно «положить» какие-то данные, чтобы использовать их позже. Представь её как коробку с наклейкой-названием.
-                
-                В Python, в отличие от многих других языков, не нужно заранее объявлять тип данных (число это или текст). Компьютер всё это поймёт сам.
-                
-                Пример создания переменных: 
-                x = 5
-                name = "Alex"
-                
-                Теперь, если ты напишешь print(x), на экране выведется число 5. А если напишешь x = 10, старая пятерка сотрётся, и в «коробку» ляжет число 10.  
-            """.trimIndent(),
-            question = "Что выведет на экран этот код?\nx = 5\ny = 2\nprint(x + y)",
-            options = listOf("52", "7", "x + y", "Выдаст ошибку"),
-            correctAnswer = "7"
+            title = "2. Переменные",
+            description = "Где хранить данные.",
+            theoryText = "Переменная — это имя для значения. В Python не нужно указывать тип, он определится сам.\nПример: age = 25",
+            question = "Как создать переменную x со значением 10?",
+            options = listOf("int x = 10", "var x = 10", "x = 10", "x := 10"),
+            correctAnswer = "x = 10",
+            rewardPoints = 100
+        ),
+        Lesson(
+            id = "py_03",
+            language = "Python",
+            title = "3. Типы данных",
+            description = "Числа и строки.",
+            theoryText = "Основные типы: int (целые числа), float (дробные), str (строки в кавычках).",
+            question = "К какому типу относится значение 5.5?",
+            options = listOf("int", "float", "str", "bool"),
+            correctAnswer = "float",
+            rewardPoints = 100
+        ),
+        Lesson(
+            id = "py_04",
+            language = "Python",
+            title = "4. Списки (Lists)",
+            description = "Работа с массивами элементов.",
+            theoryText = "Списки позволяют хранить много элементов. Они пишутся в квадратных скобках.\nПример: items = [1, 2, 3]",
+            question = "Как получить первый элемент списка a?",
+            options = listOf("a[1]", "a[0]", "a{0}", "a.first()"),
+            correctAnswer = "a[0]",
+            rewardPoints = 100
+        ),
+        Lesson(
+            id = "py_05",
+            language = "Python",
+            title = "5. Условия (If)",
+            description = "Логика программы.",
+            theoryText = "Используй if для проверки условий. Не забывай про двоеточие и отступы!\nПример:\nif x > 0:\n    print('Positive')",
+            question = "Как проверить, что a равно b?",
+            options = listOf("if a = b:", "if a == b:", "if a is b", "if a equals b"),
+            correctAnswer = "if a == b:",
+            rewardPoints = 100
+        ),
+        Lesson(
+            id = "py_06",
+            language = "Python",
+            title = "6. Цикл For",
+            description = "Повторение для каждого элемента.",
+            theoryText = "Цикл for перебирает элементы последовательности.\nПример:\nfor i in range(5):\n    print(i)",
+            question = "Какая функция создает диапазон чисел?",
+            options = listOf("list()", "range()", "generate()", "sequence()"),
+            correctAnswer = "range()",
+            rewardPoints = 100
+        ),
+        Lesson(
+            id = "py_07",
+            language = "Python",
+            title = "7. Словари (Dict)",
+            description = "Ключи и значения.",
+            theoryText = "Словари хранят пары 'ключ: значение' в фигурных скобках.\nПример: user = {'id': 1, 'name': 'Alex'}",
+            question = "Какими скобками задается словарь?",
+            options = listOf("[]", "()", "{}", "<>"),
+            correctAnswer = "{}",
+            rewardPoints = 100
+        ),
+        Lesson(
+            id = "py_08",
+            language = "Python",
+            title = "8. Функции (Def)",
+            description = "Создание своих команд.",
+            theoryText = "Функции начинаются со слова def. Это позволяет использовать код многократно.\nПример: def my_func():",
+            question = "С какого слова начинается объявление функции?",
+            options = listOf("function", "fun", "def", "task"),
+            correctAnswer = "def",
+            rewardPoints = 100
+        ),
+        Lesson(
+            id = "py_09",
+            language = "Python",
+            title = "9. Ввод данных (input)",
+            description = "Общение с пользователем.",
+            theoryText = "Функция input() позволяет пользователю ввести текст с клавиатуры.",
+            question = "Какая функция используется для ввода данных?",
+            options = listOf("read()", "get()", "input()", "scan()"),
+            correctAnswer = "input()",
+            rewardPoints = 100
+        ),
+        Lesson(
+            id = "py_10",
+            language = "Python",
+            title = "10. Комментарии",
+            description = "Заметки в коде.",
+            theoryText = "Комментарии начинаются с символа # и игнорируются программой.",
+            question = "Какой символ начинает однострочный комментарий?",
+            options = listOf("//", "/*", "#", "--"),
+            correctAnswer = "#",
+            rewardPoints = 100
         )
     )
 }

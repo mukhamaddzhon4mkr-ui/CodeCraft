@@ -12,7 +12,7 @@ import com.example.codecraft.data.db.entity.UserEntity
 
 @Database(
     entities = [UserEntity::class, ProgressEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 
@@ -33,7 +33,8 @@ abstract class AppDatabase : RoomDatabase() {
                     "codecraft.db"
                 )
                     .fallbackToDestructiveMigration()
-                    .build()
+                    .fallbackToDestructiveMigration()
+                .build()
                     .also { INSTANCE = it }
             }
         }

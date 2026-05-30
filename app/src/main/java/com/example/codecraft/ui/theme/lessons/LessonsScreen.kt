@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,17 +19,15 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.codecraft.data.model.Lesson
 import com.example.codecraft.data.model.PythonContent
+import com.example.codecraft.ui.navigation.Screen
 
-private val BgDark = Color(0xFF0D1117)
-private val Surface = Color(0xFF161B22)
-private val Accent = Color(0xFF00FF94)
-private val TextPrim = Color(0xFFE6EDF3)
-private val TextSecond = Color(0xFF8B949E)
+import com.example.codecraft.ui.theme.*
 
 @Composable
 fun LessonsScreen(
     navController: NavController,
-    onBack: () -> Unit
+    showBackButton: Boolean = true,
+    onBack: () -> Unit = {}
 ) {
     val lessons = PythonContent.lessons
 
@@ -35,16 +35,24 @@ fun LessonsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(BgDark)
+            .statusBarsPadding()
     ) {
-        // Header
+        Spacer(modifier = Modifier.height(60.dp))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onBack) {
-                Text("←", color = Accent, fontSize = 24.sp)
+            if (showBackButton) {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Назад",
+                        tint = Accent,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
             Text(
                 text = "📘 Уроки Python",
@@ -54,8 +62,6 @@ fun LessonsScreen(
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
-
-        // Список уроков
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
@@ -63,8 +69,7 @@ fun LessonsScreen(
         ) {
             items(lessons) { lesson ->
                 LessonCard(lesson = lesson) {
-                    navController.currentBackStackEntry?.savedStateHandle?.set("lessonId", lesson.id)
-                    navController.navigate("lesson")
+                    navController.navigate(Screen.LessonDetail.createRoute(lesson.id))
                 }
             }
         }

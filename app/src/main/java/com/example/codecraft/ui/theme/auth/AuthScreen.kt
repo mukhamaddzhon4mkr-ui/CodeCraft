@@ -80,11 +80,11 @@ fun AuthScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(64.dp))
+            Spacer(Modifier.height(40.dp))
 
             LogoSection()
 
-            Spacer(Modifier.height(48.dp))
+            Spacer(Modifier.height(40.dp))
 
             TabSwitcher(
                 isLoginMode = isLoginMode,
@@ -268,34 +268,42 @@ private fun LogoSection() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .size(100.dp)
+                .clip(RoundedCornerShape(24.dp))
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(Accent.copy(alpha = 0.2f), SurfaceAlt)
+                        colors = listOf(Accent.copy(alpha = 0.3f), Surface)
                     )
                 )
-                .border(1.dp, Accent.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
+                .border(2.dp, Accent.copy(alpha = 0.6f), RoundedCornerShape(24.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Text("</>" , fontSize = 28.sp, color = Accent, fontWeight = FontWeight.Bold)
+            Text("</>", fontSize = 40.sp, color = Accent, fontWeight = FontWeight.Bold)
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
         Text(
             text = "CodeCraft",
             color = TextPrim,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = (-0.5).sp
+            style = MaterialTheme.typography.displaySmall.copy(
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp
+            )
         )
         Text(
-            text = "Учись программировать играючи",
+            text = "АРХИТЕКТУРНАЯ СПЕЦИФИКАЦИЯ",
+            color = Accent,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        Text(
+            text = "Мастерство кода начинается здесь",
             color = TextSecond,
             fontSize = 14.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = 8.dp)
         )
     }
 }

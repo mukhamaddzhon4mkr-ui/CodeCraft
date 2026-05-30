@@ -16,13 +16,20 @@ import com.example.codecraft.data.repository.UserRepository
 import com.example.codecraft.ui.auth.AuthScreen
 import com.example.codecraft.ui.auth.AuthViewModel
 import com.example.codecraft.ui.home.HomeScreen
+import com.example.codecraft.ui.profile.EditProfileScreen
+import com.example.codecraft.ui.settings.SettingsScreen
+import com.example.codecraft.ui.theme.main.MainScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
     object Home : Screen("home")
     object Lessons : Screen("lessons")
-    object LessonDetail : Screen("lesson")
+    object EditProfile : Screen("edit_profile")
+    object Settings : Screen("settings")
+    object LessonDetail : Screen("lesson/{lessonId}") {
+        fun createRoute(lessonId: String) = "lesson/$lessonId"
+    }
 }
 
 @Composable
@@ -58,15 +65,32 @@ fun AppNavigation() {
         }
 
         composable(Screen.Home.route) {
-            HomeScreen(
-                navController = navController,  // ← ДОБАВИТЬ
+            MainScreen(
+                rootNavController = navController,
                 sessionManager = sessionManager,
                 onLogout = {
                     sessionManager.logout()
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
+                },
+                onNavigateToEditProfile = {
+                    navController.navigate(Screen.EditProfile.route)
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
                 }
+            )
+        }
+        composable(Screen.EditProfile.route) {
+            EditProfileScreen(
+                sessionManager = sessionManager,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                onBack = { navController.popBackStack() }
             )
         }
         composable(Screen.Lessons.route) {
@@ -76,8 +100,13 @@ fun AppNavigation() {
             )
         }
 
-        composable(Screen.LessonDetail.route) {
+        composable(
+            route = Screen.LessonDetail.route,
+            arguments = listOf(androidx.navigation.navArgument("lessonId") { type = androidx.navigation.NavType.StringType })
+        ) { backStackEntry ->
+            val lessonId = backStackEntry.arguments?.getString("lessonId")
             LessonDetailScreen(
+                lessonId = lessonId,
                 navController = navController,
                 sessionManager = sessionManager,
                 onBack = { navController.popBackStack() }

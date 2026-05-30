@@ -37,6 +37,8 @@ class UserRepository(private val userDao: UserDao) {
 
     suspend fun findById(id: Long): UserEntity? = userDao.findById(id)
 
+    suspend fun update(user: UserEntity) = userDao.update(user)
+
     private fun hashPassword(password: String): String {
         val bytes = MessageDigest.getInstance("SHA-256").digest(password.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
