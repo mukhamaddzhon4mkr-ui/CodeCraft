@@ -3,8 +3,12 @@ package com.example.codecraft.ui.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.codecraft.ui.lessons.LessonsScreen
+import com.example.codecraft.ui.lessons.LessonDetailScreen
 import androidx.navigation.compose.rememberNavController
 import com.example.codecraft.data.SessionManager
 import com.example.codecraft.data.db.AppDatabase
@@ -12,10 +16,13 @@ import com.example.codecraft.data.repository.UserRepository
 import com.example.codecraft.ui.auth.AuthScreen
 import com.example.codecraft.ui.auth.AuthViewModel
 import com.example.codecraft.ui.home.HomeScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
     object Home : Screen("home")
+    object Lessons : Screen("lessons")
+    object LessonDetail : Screen("lesson")
 }
 
 @Composable
@@ -32,9 +39,14 @@ fun AppNavigation() {
     NavHost(navController = navController, startDestination = startDestination) {
 
         composable(Screen.Auth.route) {
-            val viewModel = remember {
-                AuthViewModel(userRepository, sessionManager)
-            }
+            val viewModel: AuthViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory{
+                    @Suppress("UNCHECKED_CAST")
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        return AuthViewModel(userRepository, sessionManager) as T
+                    }
+                }
+            )
             AuthScreen(
                 viewModel = viewModel,
                 onAuthSuccess = {
@@ -47,6 +59,7 @@ fun AppNavigation() {
 
         composable(Screen.Home.route) {
             HomeScreen(
+                navController = navController,  // ← ДОБАВИТЬ
                 sessionManager = sessionManager,
                 onLogout = {
                     sessionManager.logout()
@@ -54,6 +67,20 @@ fun AppNavigation() {
                         popUpTo(Screen.Home.route) { inclusive = true }
                     }
                 }
+            )
+        }
+        composable(Screen.Lessons.route) {
+            LessonsScreen(
+                navController = navController,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.LessonDetail.route) {
+            LessonDetailScreen(
+                navController = navController,
+                sessionManager = sessionManager,
+                onBack = { navController.popBackStack() }
             )
         }
     }

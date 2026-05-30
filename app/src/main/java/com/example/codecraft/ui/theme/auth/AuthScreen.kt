@@ -21,7 +21,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 
-// ─── Цвета ───────────────────────────────────────────────────────────────────
+
 private val BgDark     = Color(0xFF0D1117)
 private val Surface    = Color(0xFF161B22)
 private val SurfaceAlt = Color(0xFF21262D)
@@ -86,7 +86,6 @@ fun AuthScreen(
 
             Spacer(Modifier.height(48.dp))
 
-            // Переключатель Login / Register
             TabSwitcher(
                 isLoginMode = isLoginMode,
                 onTabSelected = {
@@ -336,7 +335,6 @@ private fun TabSwitcher(isLoginMode: Boolean, onTabSelected: (Boolean) -> Unit) 
     }
 }
 
-// ─── Поле ввода в стиле редактора кода ───────────────────────────────────────
 
 @Composable
 private fun CodeField(

@@ -10,6 +10,9 @@ interface ProgressDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(progress: ProgressEntity)
 
+    @Query("UPDATE progress SET attempts = attempts + 1, score = :score WHERE userId = :userId AND lessonId = :lessonId")
+    suspend fun updateAttempts(userId: Long, lessonId: String, score: Int)
+
     @Query("SELECT * FROM progress WHERE userId = :userId ORDER BY completedAt DESC")
     fun getAllByUser(userId: Long): Flow<List<ProgressEntity>>
 

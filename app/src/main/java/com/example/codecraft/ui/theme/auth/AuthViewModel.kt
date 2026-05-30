@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.TimeoutCancellationException
 
 sealed class AuthState {
     object Idle : AuthState()
@@ -30,16 +32,25 @@ class AuthViewModel(
 
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val result = userRepository.register(username, email, password)
-            result.fold(
-                onSuccess = { user ->
-                    sessionManager.userId = user.id
-                    _authState.value = AuthState.Success(user)
-                },
-                onFailure = { e ->
-                    _authState.value = AuthState.Error(e.message ?: "Ошибка регистрации")
+
+            try {
+                withTimeout(5000) {
+                    val result = userRepository.register(username, email, password)
+                    result.fold(
+                        onSuccess = { user ->
+                            sessionManager.userId = user.id
+                            _authState.value = AuthState.Success(user)
+                        },
+                        onFailure = { e ->
+                            _authState.value = AuthState.Error(e.message ?: "Ошибка регистрации")
+                        }
+                    )
                 }
-            )
+            } catch (e: TimeoutCancellationException) {
+                _authState.value = AuthState.Error("Превышено время ожидания. Проверьте соединение.")
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error("Произошла ошибка: ${e.message}")
+            }
         }
     }
 
@@ -51,16 +62,25 @@ class AuthViewModel(
 
         viewModelScope.launch {
             _authState.value = AuthState.Loading
-            val result = userRepository.login(email, password)
-            result.fold(
-                onSuccess = { user ->
-                    sessionManager.userId = user.id
-                    _authState.value = AuthState.Success(user)
-                },
-                onFailure = { e ->
-                    _authState.value = AuthState.Error(e.message ?: "Ошибка входа")
+
+            try {
+                withTimeout(5000) {
+                    val result = userRepository.login(email, password)
+                    result.fold(
+                        onSuccess = { user ->
+                            sessionManager.userId = user.id
+                            _authState.value = AuthState.Success(user)
+                        },
+                        onFailure = { e ->
+                            _authState.value = AuthState.Error(e.message ?: "Ошибка входа")
+                        }
+                    )
                 }
-            )
+            } catch (e: TimeoutCancellationException) {
+                _authState.value = AuthState.Error("Превышено время ожидания. Проверьте соединение.")
+            } catch (e: Exception) {
+                _authState.value = AuthState.Error("Произошла ошибка: ${e.message}")
+            }
         }
     }
 
@@ -69,8 +89,10 @@ class AuthViewModel(
     }
 
     private fun validateRegister(
-        username: String, email: String,
-        password: String, confirmPassword: String
+        username: String,
+        email: String,
+        password: String,
+        confirmPassword: String
     ): Boolean {
         return when {
             username.isBlank() || email.isBlank() || password.isBlank() -> {
@@ -78,15 +100,23 @@ class AuthViewModel(
                 false
             }
             username.length < 3 -> {
-                _authState.value = AuthState.Error("Имя должно быть не менее 3 символов")
+                _authState.value = AuthState.Error("Имя пользователя должно быть не менее 3 символов")
                 false
             }
-            !email.contains("@") -> {
-                _authState.value = AuthState.Error("Неверный формат email")
+            username.length > 20 -> {
+                _authState.value = AuthState.Error("Имя пользователя не должно превышать 20 символов")
+                false
+            }
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
+                _authState.value = AuthState.Error("Введите корректный email адрес")
                 false
             }
             password.length < 6 -> {
-                _authState.value = AuthState.Error("Пароль минимум 6 символов")
+                _authState.value = AuthState.Error("Пароль должен быть не менее 6 символов")
+                false
+            }
+            password.length > 50 -> {
+                _authState.value = AuthState.Error("Пароль не должен превышать 50 символов")
                 false
             }
             password != confirmPassword -> {
