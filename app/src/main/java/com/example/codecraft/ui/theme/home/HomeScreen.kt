@@ -1,4 +1,4 @@
-package com.example.codecraft.ui.home
+package com.example.codecraft.ui.theme.home
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -24,25 +24,31 @@ import com.example.codecraft.data.SessionManager
 import com.example.codecraft.data.db.AppDatabase
 import com.example.codecraft.data.repository.NotificationRepository
 import com.example.codecraft.data.repository.ProgressRepository
+import com.example.codecraft.data.repository.UserRepository
 import kotlinx.coroutines.launch
-
 import com.example.codecraft.ui.theme.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.codecraft.ui.theme.home.viewmodel.HomeUiState
+import com.example.codecraft.ui.theme.home.viewmodel.HomeViewModel
+import com.example.codecraft.ui.viewmodel.ViewModelFactory
 
 @Composable
 fun HomeScreen(
     navController: NavController,
     sessionManager: SessionManager,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    viewModelFactory: ViewModelFactory
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getInstance(context) }
-    val progressRepository = remember { ProgressRepository(db.progressDao(), db.notificationDao(), db.userDao()) }
-    val notificationRepository = remember { NotificationRepository(db.notificationDao(), db.userDao()) }
-    val userRepository = remember { com.example.codecraft.data.repository.UserRepository(db.userDao()) }
+    
+    val viewModel: HomeViewModel = viewModel(factory = viewModelFactory)
+
+    val uiState by viewModel.uiState.collectAsState()
     val userId = sessionManager.userId
     val scope = rememberCoroutineScope()
-
-    var totalScore by remember { mutableIntStateOf(0) }
+    
+    val notificationRepository = remember { NotificationRepository(db.notificationDao(), db.userDao()) }
     val notifications by if (userId != null) {
         notificationRepository.getNotifications(userId).collectAsState(initial = emptyList())
     } else {
@@ -53,12 +59,16 @@ fun HomeScreen(
     
     LaunchedEffect(userId) {
         if (userId != null) {
-            val user = userRepository.findById(userId)
-            if (user == null) {
-                onLogout()
-            } else {
-                progressRepository.getTotalScore(userId).collect { totalScore = it }
-            }
+            viewModel.loadDashboardData(userId)
+        } else {
+            onLogout()
+        }
+    }
+
+    // Обработка выхода если пользователь удален
+    LaunchedEffect(uiState) {
+        if (uiState is HomeUiState.Error && (uiState as HomeUiState.Error).message.contains("не найден")) {
+            onLogout()
         }
     }
 
@@ -81,6 +91,39 @@ fun HomeScreen(
         )
     }
 
+    when (val state = uiState) {
+        is HomeUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize().background(BgDark), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Accent)
+            }
+        }
+        is HomeUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize().background(BgDark).padding(16.dp), contentAlignment = Alignment.Center) {
+                Text(state.message, color = Color.Red, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+        is HomeUiState.Success -> {
+            HomeScreenContent(
+                navController = navController,
+                username = state.username,
+                totalScore = state.totalScore,
+                news = state.news,
+                notifications = notifications,
+                onShowNotifications = { showNotifications = true }
+            )
+        }
+    }
+}
+
+@Composable
+fun HomeScreenContent(
+    navController: NavController,
+    username: String,
+    totalScore: Int,
+    news: List<com.example.codecraft.data.api.NewsItem>,
+    notifications: List<com.example.codecraft.data.db.entity.NotificationEntity>,
+    onShowNotifications: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -108,12 +151,12 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("CodeCraft", color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Мастерская кода", color = TextPrim, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("Привет, $username!", color = Accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("CodeCraft", color = TextPrim, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
             IconButton(
-                onClick = { showNotifications = true },
+                onClick = onShowNotifications,
                 modifier = Modifier.background(Surface, CircleShape)
             ) {
                 BadgedBox(
@@ -124,44 +167,6 @@ fun HomeScreen(
                     }
                 ) {
                     Icon(Icons.Default.Notifications, contentDescription = null, tint = Accent)
-                }
-            }
-        }
-
-        if (userId != null) {
-            val progress by progressRepository.getProgressByLanguage(userId, "Python")
-                .collectAsState(initial = emptyList())
-            
-            val latestCompleted = progress.filter { it.isCompleted }
-                .maxByOrNull { it.completedAt ?: 0L }
-
-            if (latestCompleted != null) {
-                Spacer(modifier = Modifier.height(24.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Accent.copy(alpha = 0.1f)),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Accent.copy(alpha = 0.5f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("🎉", fontSize = 24.sp)
-                        Spacer(Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                "Поздравляем!",
-                                color = Accent,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "Вы прошли урок: ${latestCompleted.lessonTitle}",
-                                color = TextPrim,
-                                fontSize = 14.sp
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -202,6 +207,29 @@ fun HomeScreen(
                 modifier = Modifier.align(Alignment.TopEnd).size(48.dp),
                 tint = BgDark.copy(alpha = 0.2f)
             )
+        }
+
+        if (news.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Text(
+                "Новости IT (из API)",
+                color = TextPrim,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            news.forEach { item ->
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(item.title, color = Accent, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                        Text(item.body, color = TextSecond, fontSize = 12.sp, maxLines = 2)
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))

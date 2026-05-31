@@ -1,4 +1,4 @@
-package com.example.codecraft.ui.lessons
+package com.example.codecraft.ui.theme.lessons
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,32 +25,35 @@ import com.example.codecraft.data.db.AppDatabase
 import com.example.codecraft.data.model.Lesson
 import com.example.codecraft.data.model.PythonContent
 import com.example.codecraft.data.repository.ProgressRepository
-import com.example.codecraft.ui.navigation.Screen
+import com.example.codecraft.ui.theme.navigation.Screen
 
 import com.example.codecraft.ui.theme.*
+
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.codecraft.ui.theme.lessons.viewmodel.LessonsUiState
+import com.example.codecraft.ui.theme.lessons.viewmodel.LessonsViewModel
+import com.example.codecraft.ui.viewmodel.ViewModelFactory
 
 @Composable
 fun LessonsScreen(
     navController: NavController,
     sessionManager: SessionManager,
     showBackButton: Boolean = true,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    viewModelFactory: ViewModelFactory
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getInstance(context) }
-    val progressRepository = remember { ProgressRepository(db.progressDao(), db.notificationDao(), db.userDao()) }
+    
+    val viewModel: LessonsViewModel = viewModel(factory = viewModelFactory)
+    
+    val uiState by viewModel.uiState.collectAsState()
     val userId = sessionManager.userId
     
-    val lessons = PythonContent.lessons
-    val completedLessonIds by if (userId != null) {
-        progressRepository.getProgressByLanguage(userId, "Python")
-            .collectAsState(initial = emptyList())
-    } else {
-        remember { mutableStateOf(emptyList()) }
-    }
-    
-    val completedIdsSet = remember(completedLessonIds) {
-        completedLessonIds.filter { it.isCompleted }.map { it.lessonId }.toSet()
+    LaunchedEffect(userId) {
+        if (userId != null) {
+            viewModel.loadLessons(userId)
+        }
     }
 
     Column(
@@ -84,23 +87,38 @@ fun LessonsScreen(
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(lessons.indices.toList()) { index ->
-                val lesson = lessons[index]
-                val isCompleted = completedIdsSet.contains(lesson.id)
-                val isLocked = index > 0 && !completedIdsSet.contains(lessons[index - 1].id)
-                
-                LessonCard(
-                    lesson = lesson, 
-                    isCompleted = isCompleted,
-                    isLocked = isLocked
+
+        when (val state = uiState) {
+            is LessonsUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Accent)
+                }
+            }
+            is LessonsUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(state.message, color = Color.Red)
+                }
+            }
+            is LessonsUiState.Success -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (!isLocked) {
-                        navController.navigate(Screen.LessonDetail.createRoute(lesson.id))
+                    items(state.lessons.indices.toList()) { index ->
+                        val lesson = state.lessons[index]
+                        val isCompleted = state.completedLessonIds.contains(lesson.id)
+                        val isLocked = index > 0 && !state.completedLessonIds.contains(state.lessons[index - 1].id)
+                        
+                        LessonCard(
+                            lesson = lesson, 
+                            isCompleted = isCompleted,
+                            isLocked = isLocked
+                        ) {
+                            if (!isLocked) {
+                                navController.navigate(Screen.LessonDetail.createRoute(lesson.id))
+                            }
+                        }
                     }
                 }
             }

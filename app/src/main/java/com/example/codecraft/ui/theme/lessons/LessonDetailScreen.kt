@@ -1,4 +1,4 @@
-package com.example.codecraft.ui.lessons
+package com.example.codecraft.ui.theme.lessons
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,63 +14,76 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.codecraft.data.SessionManager
-import com.example.codecraft.data.db.AppDatabase
 import com.example.codecraft.data.model.Lesson
 import com.example.codecraft.data.model.PythonContent
-import com.example.codecraft.data.repository.ProgressRepository
-import com.example.codecraft.ui.navigation.Screen
-import kotlinx.coroutines.launch
+import com.example.codecraft.ui.theme.*
+import com.example.codecraft.ui.theme.lessons.viewmodel.LessonDetailUiState
+import com.example.codecraft.ui.theme.lessons.viewmodel.LessonDetailViewModel
+import com.example.codecraft.ui.theme.navigation.Screen
+import com.example.codecraft.ui.viewmodel.ViewModelFactory
 
-private val BgDark = Color(0xFF0D1117)
-private val Surface = Color(0xFF161B22)
-private val Accent = Color(0xFF00FF94)
-private val TextPrim = Color(0xFFE6EDF3)
-private val TextSecond = Color(0xFF8B949E)
-private val ErrorColor = Color(0xFFFF5555)
+
 
 @Composable
 fun LessonDetailScreen(
     lessonId: String?,
     navController: NavController,
     sessionManager: SessionManager,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    viewModelFactory: ViewModelFactory
 ) {
-    val context = LocalContext.current
-    val db = remember { AppDatabase.getInstance(context) }
-    val progressRepository = remember { ProgressRepository(db.progressDao(), db.notificationDao(), db.userDao()) }
-    val scope = rememberCoroutineScope()
+    val viewModel: LessonDetailViewModel = viewModel(factory = viewModelFactory)
+    val uiState by viewModel.uiState.collectAsState()
 
-    val lesson = remember(lessonId) {
-        PythonContent.lessons.find { it.id == lessonId }
+    LaunchedEffect(lessonId) {
+        viewModel.loadLesson(lessonId)
     }
 
-    val currentIndex = lesson?.let { PythonContent.lessons.indexOf(it) } ?: -1
-    val nextLesson = if (currentIndex != -1 && currentIndex + 1 < PythonContent.lessons.size) {
-        PythonContent.lessons[currentIndex + 1]
-    } else {
-        null
+    when (val state = uiState) {
+        is LessonDetailUiState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize().background(BgDark), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Accent)
+            }
+        }
+        is LessonDetailUiState.Error -> {
+            Box(modifier = Modifier.fillMaxSize().background(BgDark), contentAlignment = Alignment.Center) {
+                Text(state.message, color = ErrorColor)
+            }
+        }
+        is LessonDetailUiState.Success -> {
+            LessonDetailContent(
+                lesson = state.lesson,
+                nextLesson = state.nextLesson,
+                currentIndex = state.currentIndex,
+                totalLessons = PythonContent.lessons.size,
+                onBack = onBack,
+                onComplete = { viewModel.completeLesson(sessionManager.userId ?: -1, state.lesson) },
+                navController = navController
+            )
+        }
     }
+}
 
+@Composable
+fun LessonDetailContent(
+    lesson: Lesson,
+    nextLesson: Lesson?,
+    currentIndex: Int,
+    totalLessons: Int,
+    onBack: () -> Unit,
+    onComplete: () -> Unit,
+    navController: NavController
+) {
     var selectedAnswer by remember { mutableStateOf("") }
     var resultMessage by remember { mutableStateOf<String?>(null) }
     var isAnswered by remember { mutableStateOf(false) }
     var isCorrect by remember { mutableStateOf(false) }
-
-    if (lesson == null) {
-        Box(
-            modifier = Modifier.fillMaxSize().background(BgDark),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Урок не найден", color = ErrorColor)
-        }
-        return
-    }
 
     Column(
         modifier = Modifier
@@ -102,7 +115,7 @@ fun LessonDetailScreen(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = "${currentIndex + 1}/${PythonContent.lessons.size}",
+                    text = "${currentIndex + 1}/$totalLessons",
                     color = TextSecond,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(end = 16.dp)
@@ -139,7 +152,6 @@ fun LessonDetailScreen(
                 }
             }
 
-            // Вопрос
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -198,18 +210,7 @@ fun LessonDetailScreen(
                                 if (selectedAnswer == lesson.correctAnswer) {
                                     isCorrect = true
                                     resultMessage = "✅ Правильно! +${lesson.rewardPoints} очков"
-                                    val userId = sessionManager.userId
-                                    if (userId != null) {
-                                        scope.launch {
-                                            progressRepository.completeLesson(
-                                                userId = userId,
-                                                language = lesson.language,
-                                                lessonId = lesson.id,
-                                                lessonTitle = lesson.title,
-                                                score = lesson.rewardPoints
-                                            )
-                                        }
-                                    }
+                                    onComplete()
                                 } else {
                                     isCorrect = false
                                     resultMessage = "❌ Неправильно. Правильный ответ: ${lesson.correctAnswer}"
@@ -244,7 +245,7 @@ fun LessonDetailScreen(
 
                                 Spacer(modifier = Modifier.height(12.dp))
 
-                                if (nextLesson != null) {
+                                if (isCorrect && nextLesson != null) {
                                     Button(
                                         onClick = {
                                             navController.navigate(Screen.LessonDetail.createRoute(nextLesson.id)) {
@@ -256,13 +257,25 @@ fun LessonDetailScreen(
                                     ) {
                                         Text("➡ Следующий урок: ${nextLesson.title}", color = BgDark, fontWeight = FontWeight.Bold)
                                     }
-                                } else {
+                                } else if (isCorrect) {
                                     Button(
                                         onClick = { onBack() },
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = ButtonDefaults.buttonColors(containerColor = Accent)
                                     ) {
                                         Text("🏆 Завершить обучение", color = BgDark, fontWeight = FontWeight.Bold)
+                                    }
+                                } else {
+                                    Button(
+                                        onClick = {
+                                            isAnswered = false
+                                            resultMessage = null
+                                            selectedAnswer = ""
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = ButtonDefaults.buttonColors(containerColor = ErrorColor)
+                                    ) {
+                                        Text("🔄 Попробовать еще раз", color = Color.White, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }

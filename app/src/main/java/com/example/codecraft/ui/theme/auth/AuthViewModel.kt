@@ -1,4 +1,4 @@
-package com.example.codecraft.ui.auth
+package com.example.codecraft.ui.theme.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

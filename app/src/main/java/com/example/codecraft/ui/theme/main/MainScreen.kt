@@ -16,9 +16,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.codecraft.data.SessionManager
-import com.example.codecraft.ui.home.HomeScreen
-import com.example.codecraft.ui.lessons.LessonsScreen
-import com.example.codecraft.ui.profile.ProfileScreen
+import com.example.codecraft.ui.theme.home.HomeScreen
+import com.example.codecraft.ui.theme.lessons.LessonsScreen
+import com.example.codecraft.ui.theme.profile.ProfileScreen
+import com.example.codecraft.ui.viewmodel.ViewModelFactory
+import com.example.codecraft.data.db.AppDatabase
+import com.example.codecraft.data.repository.UserRepository
+import com.example.codecraft.data.repository.ProgressRepository
+import androidx.compose.ui.platform.LocalContext
 
 sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
     object Home : BottomNavItem("home_tab", Icons.Default.Home, "Главная")
@@ -32,9 +37,12 @@ fun MainScreen(
     sessionManager: SessionManager,
     onLogout: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    viewModelFactory: ViewModelFactory
 ) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Courses,
@@ -85,14 +93,16 @@ fun MainScreen(
                 HomeScreen(
                     navController = rootNavController,
                     sessionManager = sessionManager,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    viewModelFactory = viewModelFactory
                 )
             }
             composable(BottomNavItem.Courses.route) {
                 LessonsScreen(
                     navController = rootNavController,
                     sessionManager = sessionManager,
-                    showBackButton = false
+                    showBackButton = false,
+                    viewModelFactory = viewModelFactory
                 )
             }
             composable(BottomNavItem.Profile.route) {
@@ -100,7 +110,8 @@ fun MainScreen(
                     sessionManager = sessionManager,
                     onLogout = onLogout,
                     onEditProfile = onNavigateToEditProfile,
-                    onSettings = onNavigateToSettings
+                    onSettings = onNavigateToSettings,
+                    viewModelFactory = viewModelFactory
                 )
             }
         }

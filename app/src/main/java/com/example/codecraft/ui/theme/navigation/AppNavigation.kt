@@ -1,4 +1,4 @@
-package com.example.codecraft.ui.navigation
+package com.example.codecraft.ui.theme.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -7,19 +7,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.codecraft.ui.lessons.LessonsScreen
-import com.example.codecraft.ui.lessons.LessonDetailScreen
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 import com.example.codecraft.data.SessionManager
 import com.example.codecraft.data.db.AppDatabase
 import com.example.codecraft.data.repository.UserRepository
-import com.example.codecraft.ui.auth.AuthScreen
-import com.example.codecraft.ui.auth.AuthViewModel
-import com.example.codecraft.ui.home.HomeScreen
-import com.example.codecraft.ui.profile.EditProfileScreen
-import com.example.codecraft.ui.settings.SettingsScreen
+import com.example.codecraft.data.repository.ProgressRepository
+import com.example.codecraft.ui.theme.auth.AuthScreen
+import com.example.codecraft.ui.theme.auth.AuthViewModel
+import com.example.codecraft.ui.theme.lessons.LessonsScreen
+import com.example.codecraft.ui.theme.lessons.LessonDetailScreen
+import com.example.codecraft.ui.theme.profile.EditProfileScreen
+import com.example.codecraft.ui.theme.settings.SettingsScreen
 import com.example.codecraft.ui.theme.main.MainScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.codecraft.ui.viewmodel.ViewModelFactory
 
 sealed class Screen(val route: String) {
     object Auth : Screen("auth")
@@ -40,6 +42,8 @@ fun AppNavigation() {
     val db = remember { AppDatabase.getInstance(context) }
     val sessionManager = remember { SessionManager(context) }
     val userRepository = remember { UserRepository(db.userDao()) }
+    val progressRepository = remember { ProgressRepository(db.progressDao(), db.notificationDao(), db.userDao()) }
+    val viewModelFactory = remember { ViewModelFactory(userRepository, progressRepository) }
 
     val startDestination = if (sessionManager.isLoggedIn) Screen.Home.route else Screen.Auth.route
 
@@ -79,7 +83,8 @@ fun AppNavigation() {
                 },
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
-                }
+                },
+                viewModelFactory = viewModelFactory
             )
         }
         composable(Screen.EditProfile.route) {
@@ -97,7 +102,8 @@ fun AppNavigation() {
             LessonsScreen(
                 navController = navController,
                 sessionManager = sessionManager,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                viewModelFactory = viewModelFactory
             )
         }
 
@@ -110,7 +116,8 @@ fun AppNavigation() {
                 lessonId = lessonId,
                 navController = navController,
                 sessionManager = sessionManager,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                viewModelFactory = viewModelFactory
             )
         }
     }

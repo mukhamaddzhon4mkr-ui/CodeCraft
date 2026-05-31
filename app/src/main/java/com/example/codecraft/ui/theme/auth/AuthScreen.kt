@@ -1,4 +1,4 @@
-package com.example.codecraft.ui.auth
+package com.example.codecraft.ui.theme.auth
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -20,17 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
-
-
-private val BgDark     = Color(0xFF0D1117)
-private val Surface    = Color(0xFF161B22)
-private val SurfaceAlt = Color(0xFF21262D)
-private val Accent     = Color(0xFF00FF94)
-private val AccentDim  = Color(0xFF00CC75)
-private val TextPrim   = Color(0xFFE6EDF3)
-private val TextSecond = Color(0xFF8B949E)
-private val ErrorColor = Color(0xFFFF5555)
-private val TabInactive= Color(0xFF30363D)
+import com.example.codecraft.ui.theme.*
 
 @Composable
 fun AuthScreen(
@@ -40,7 +30,6 @@ fun AuthScreen(
     val authState by viewModel.authState.collectAsState()
     var isLoginMode by remember { mutableStateOf(true) }
 
-    // Поля
     var username    by remember { mutableStateOf("") }
     var email       by remember { mutableStateOf("") }
     var password    by remember { mutableStateOf("") }

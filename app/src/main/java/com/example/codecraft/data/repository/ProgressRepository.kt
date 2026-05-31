@@ -22,6 +22,10 @@ class ProgressRepository(
         return progressDao.totalScore(userId)
     }
 
+    fun getCompletedLessonsCount(userId: Long): Flow<Int> {
+        return progressDao.completedLessonsCount(userId)
+    }
+
     suspend fun completeLesson(
         userId: Long,
         language: String,
